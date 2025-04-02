@@ -105,10 +105,17 @@ jobs:
           
           [Run]
           Filename: "{app}\ServerRegistrationManager.exe"; Parameters: "install ""{app}\FunscriptPreviewHandler.dll"" -codebase"; Flags: runhidden
-          Filename: "{cmd}"; Parameters: "/c taskkill /im explorer.exe /f && start explorer.exe"; Flags: runhidden postinstall; Description: "Restart Explorer to apply changes"
+          Filename: "{cmd}"; Parameters: "/c taskkill /im explorer.exe /f && timeout /t 2 && start explorer.exe"; Flags: runhidden postinstall; Description: "Restart Explorer to apply changes"
           
           [UninstallRun]
           Filename: "{app}\ServerRegistrationManager.exe"; Parameters: "uninstall ""{app}\FunscriptPreviewHandler.dll"""; Flags: runhidden
+          Filename: "{cmd}"; Parameters: "/c taskkill /im explorer.exe /f && timeout /t 2 && start explorer.exe"; Flags: runhidden
+          
+          [UninstallDelete]
+          Type: files; Name: "{app}\FunscriptPreviewHandler.dll"; DelayIfExists: true
+          Type: files; Name: "{app}\Newtonsoft.Json.dll"; DelayIfExists: true
+          Type: files; Name: "{app}\SharpShell.dll"; DelayIfExists: true
+          Type: dirifempty; Name: "{app}"
           "@
           
           Set-Content -Path "installer.iss" -Value $innoScript
@@ -130,6 +137,5 @@ jobs:
             bin/Release/FunscriptPreviewHandler.dll
             bin/Release/Newtonsoft.Json.dll
             bin/Release/SharpShell.dll
-            bin/Release/ServerRegistrationManager.exe
             Output/FunscriptPreviewHandler-Setup.exe
           draft: true
