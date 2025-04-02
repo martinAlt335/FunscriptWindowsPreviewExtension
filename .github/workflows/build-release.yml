@@ -1,0 +1,127 @@
+﻿name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1.3.1
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v1.2.0
+
+      # Handle signing key - create a development one or use secret for releases
+      - name: Create development strong name key
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          dotnet tool install -g CreateStrongNameKey
+          CreateStrongNameKey -f Key.snk
+        shell: pwsh
+
+      - name: Decode signing key for releases
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY_BASE64 }}
+        run: |
+          [System.Convert]::FromBase64String($env:SIGNING_KEY) | Set-Content -Path Key.snk -AsByteStream
+        shell: pwsh
+
+      # Extract version from tag for assembly versioning
+      - name: Set version from tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          $version = '${{github.ref_name}}'.TrimStart('v')
+          echo "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+
+      # Update assembly version
+      - name: Update assembly version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          $files = Get-ChildItem -Path . -Filter "*.cs" -Recurse | Where-Object { $_.FullName -match "AssemblyInfo.cs" }
+          foreach ($file in $files) {
+            (Get-Content $file.FullName) -replace 'AssemblyVersion\("[0-9.]+"\)', "AssemblyVersion(""$env:VERSION"")" | Set-Content $file.FullName
+            (Get-Content $file.FullName) -replace 'AssemblyFileVersion\("[0-9.]+"\)', "AssemblyFileVersion(""$env:VERSION"")" | Set-Content $file.FullName
+          }
+        shell: pwsh
+
+      - name: Restore packages
+        run: nuget restore FunscriptPreviewHandler.csproj
+
+      - name: Build solution
+        run: msbuild FunscriptPreviewHandler.csproj /p:Configuration=Release
+
+      - name: Install Inno Setup
+        run: |
+          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile "is.exe"
+          Start-Process -FilePath "is.exe" -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" -Wait
+
+      - name: Create Inno Setup script
+        run: |
+          $version = '${{github.ref_name}}'.TrimStart('v')
+          if ([string]::IsNullOrEmpty($version)) { $version = "1.0.0" }
+          
+          $innoScript = @"
+          [Setup]
+          AppName=Funscript Preview Handler
+          AppVersion=$version
+          AppVerName=Funscript Preview Handler $version
+          DefaultDirName={pf}\FunscriptPreviewHandler
+          DisableProgramGroupPage=yes
+          AppId={{2BF2945B-0FD0-44CE-B906-83EB599744D5}}
+          CloseApplications=yes
+          RestartApplications=no
+          OutputDir=Output
+          OutputBaseFilename=FunscriptPreviewHandler-Setup
+          Compression=lzma
+          SolidCompression=yes
+          PrivilegesRequired=admin
+          
+          [Files]
+          Source: "bin\Release\FunscriptPreviewHandler.dll"; DestDir: "{app}"; Flags: ignoreversion
+          Source: "bin\Release\Newtonsoft.Json.dll"; DestDir: "{app}"; Flags: ignoreversion
+          Source: "bin\Release\SharpShell.dll"; DestDir: "{app}"; Flags: ignoreversion
+          
+          [Run]
+          Filename: "{sys}\regasm.exe"; Parameters: "/unregister ""{app}\FunscriptPreviewHandler.dll"""; Flags: runhidden skipifdoesntexist
+          Filename: "{sys}\regasm.exe"; Parameters: "/codebase ""{app}\FunscriptPreviewHandler.dll"""; Flags: runhidden
+          Filename: "{cmd}"; Parameters: "/c taskkill /im explorer.exe /f && start explorer.exe"; Flags: runhidden postinstall; Description: "Restart Explorer to apply changes"
+          
+          [UninstallRun]
+          Filename: "{sys}\regasm.exe"; Parameters: "/unregister ""{app}\FunscriptPreviewHandler.dll"""; Flags: runhidden
+          "@
+          
+          Set-Content -Path "installer.iss" -Value $innoScript
+        shell: pwsh
+
+      - name: Build installer
+        run: |
+          # Create Output directory if it doesn't exist
+          New-Item -ItemType Directory -Force -Path "Output"
+          
+          & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' installer.iss
+        shell: pwsh
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            bin/Release/FunscriptPreviewHandler.dll
+            bin/Release/Newtonsoft.Json.dll
+            bin/Release/SharpShell.dll
+            Output/FunscriptPreviewHandler-Setup.exe
+          draft: true
