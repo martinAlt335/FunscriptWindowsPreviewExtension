@@ -2,7 +2,7 @@
 
 A Windows Explorer preview handler that allows you to preview .funscript files directly in the Windows Explorer preview pane.
 
-![Preview Screenshot](docs/screenshot.png)
+![Preview Screenshot](docs/screenshot.PNG)
 
 ## Features
 
