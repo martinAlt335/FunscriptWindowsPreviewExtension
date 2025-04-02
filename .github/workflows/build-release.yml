@@ -101,14 +101,14 @@ jobs:
           Source: "bin\Release\FunscriptPreviewHandler.dll"; DestDir: "{app}"; Flags: ignoreversion
           Source: "bin\Release\Newtonsoft.Json.dll"; DestDir: "{app}"; Flags: ignoreversion
           Source: "bin\Release\SharpShell.dll"; DestDir: "{app}"; Flags: ignoreversion
-          Source: "bin\Release\srm.exe"; DestDir: "{app}"; Flags: ignoreversion
+          Source: "bin\Release\ServerRegistrationManager.exe"; DestDir: "{app}"; Flags: ignoreversion
           
           [Run]
-          Filename: "{app}\srm.exe"; Parameters: "install ""{app}\FunscriptPreviewHandler.dll"" -codebase"; Flags: runhidden
+          Filename: "{app}\ServerRegistrationManager.exe"; Parameters: "install ""{app}\FunscriptPreviewHandler.dll"" -codebase"; Flags: runhidden
           Filename: "{cmd}"; Parameters: "/c taskkill /im explorer.exe /f && start explorer.exe"; Flags: runhidden postinstall; Description: "Restart Explorer to apply changes"
           
           [UninstallRun]
-          Filename: "{app}\srm.exe"; Parameters: "uninstall ""{app}\FunscriptPreviewHandler.dll"""; Flags: runhidden
+          Filename: "{app}\ServerRegistrationManager.exe"; Parameters: "uninstall ""{app}\FunscriptPreviewHandler.dll"""; Flags: runhidden
           "@
           
           Set-Content -Path "installer.iss" -Value $innoScript
@@ -130,5 +130,6 @@ jobs:
             bin/Release/FunscriptPreviewHandler.dll
             bin/Release/Newtonsoft.Json.dll
             bin/Release/SharpShell.dll
+            bin/Release/ServerRegistrationManager.exe
             Output/FunscriptPreviewHandler-Setup.exe
           draft: true
