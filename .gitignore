@@ -46,3 +46,6 @@ _ReSharper*/
 # Installer files
 [Ss]etup/[Oo]utput/
 *.exe
+
+# Exception for Inno Setup
+!.github/tools/innosetup-6.3.3.exe
