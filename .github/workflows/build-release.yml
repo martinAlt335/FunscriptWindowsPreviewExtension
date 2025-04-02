@@ -8,7 +8,8 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    timeout-minutes: 10
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v3
 
@@ -27,8 +28,10 @@ jobs:
       - name: Create development strong name key
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         run: |
-          dotnet tool install -g CreateStrongNameKey
-          CreateStrongNameKey -f Key.snk
+          Add-Type -AssemblyName System.Security
+          $keyPair = New-Object System.Security.Cryptography.RSACryptoServiceProvider(2048)
+          $keyBlob = $keyPair.ExportCspBlob($true)
+          [System.IO.File]::WriteAllBytes("Key.snk", $keyBlob)
         shell: pwsh
 
       - name: Decode signing key for releases
@@ -62,7 +65,7 @@ jobs:
         run: nuget restore FunscriptPreviewHandler.csproj
 
       - name: Build solution
-        run: msbuild FunscriptPreviewHandler.csproj /p:Configuration=Release
+        run: dotnet build FunscriptPreviewHandler.csproj --configuration Release
 
       - name: Install Inno Setup
         run: |
