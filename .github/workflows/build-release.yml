@@ -105,11 +105,11 @@ jobs:
           
           [Run]
           Filename: "{app}\ServerRegistrationManager.exe"; Parameters: "install ""{app}\FunscriptPreviewHandler.dll"" -codebase"; Flags: runhidden
-          Filename: "{cmd}"; Parameters: "/c taskkill /im explorer.exe /f && timeout /t 2 && start explorer.exe"; Flags: runhidden postinstall; Description: "Restart Explorer to apply changes"
+          Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Stop-Process -Name explorer -Force; Start-Sleep -Seconds 2; explorer.exe"""; Flags: runhidden postinstall; Description: "Restart Explorer to apply changes"
           
           [UninstallRun]
           Filename: "{app}\ServerRegistrationManager.exe"; Parameters: "uninstall ""{app}\FunscriptPreviewHandler.dll"""; Flags: runhidden
-          Filename: "{cmd}"; Parameters: "/c taskkill /im explorer.exe /f && timeout /t 2 && start explorer.exe"; Flags: runhidden
+          Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Stop-Process -Name explorer -Force; Start-Sleep -Seconds 2; explorer.exe"""; Flags: runhidden
           
           [UninstallDelete]
           Type: files; Name: "{app}\FunscriptPreviewHandler.dll";
