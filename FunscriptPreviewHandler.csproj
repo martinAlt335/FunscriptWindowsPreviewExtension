@@ -24,6 +24,7 @@
 
     <ItemGroup>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="ServerRegistrationManager" Version="2.7.2" />
         <PackageReference Include="SharpShell" Version="2.7.2" />
     </ItemGroup>
 

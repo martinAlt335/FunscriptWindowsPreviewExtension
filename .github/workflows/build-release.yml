@@ -101,14 +101,14 @@ jobs:
           Source: "bin\Release\FunscriptPreviewHandler.dll"; DestDir: "{app}"; Flags: ignoreversion
           Source: "bin\Release\Newtonsoft.Json.dll"; DestDir: "{app}"; Flags: ignoreversion
           Source: "bin\Release\SharpShell.dll"; DestDir: "{app}"; Flags: ignoreversion
+          Source: "bin\Release\srm.exe"; DestDir: "{app}"; Flags: ignoreversion
           
           [Run]
-          Filename: "{sys}\regasm.exe"; Parameters: "/unregister ""{app}\FunscriptPreviewHandler.dll"""; Flags: runhidden skipifdoesntexist
-          Filename: "{sys}\regasm.exe"; Parameters: "/codebase ""{app}\FunscriptPreviewHandler.dll"""; Flags: runhidden
+          Filename: "{app}\srm.exe"; Parameters: "install ""{app}\FunscriptPreviewHandler.dll"" -codebase"; Flags: runhidden
           Filename: "{cmd}"; Parameters: "/c taskkill /im explorer.exe /f && start explorer.exe"; Flags: runhidden postinstall; Description: "Restart Explorer to apply changes"
           
           [UninstallRun]
-          Filename: "{sys}\regasm.exe"; Parameters: "/unregister ""{app}\FunscriptPreviewHandler.dll"""; Flags: runhidden
+          Filename: "{app}\srm.exe"; Parameters: "uninstall ""{app}\FunscriptPreviewHandler.dll"""; Flags: runhidden
           "@
           
           Set-Content -Path "installer.iss" -Value $innoScript
