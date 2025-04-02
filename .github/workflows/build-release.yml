@@ -112,9 +112,9 @@ jobs:
           Filename: "{cmd}"; Parameters: "/c taskkill /im explorer.exe /f && timeout /t 2 && start explorer.exe"; Flags: runhidden
           
           [UninstallDelete]
-          Type: files; Name: "{app}\FunscriptPreviewHandler.dll"; DelayIfExists: true
-          Type: files; Name: "{app}\Newtonsoft.Json.dll"; DelayIfExists: true
-          Type: files; Name: "{app}\SharpShell.dll"; DelayIfExists: true
+          Type: files; Name: "{app}\FunscriptPreviewHandler.dll";
+          Type: files; Name: "{app}\Newtonsoft.Json.dll";
+          Type: files; Name: "{app}\SharpShell.dll";
           Type: dirifempty; Name: "{app}"
           "@
           
