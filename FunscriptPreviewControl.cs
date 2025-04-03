@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Drawing;
@@ -132,32 +133,69 @@ namespace FunscriptPreviewHandler
         {
             var sb = new StringBuilder();
 
-            // Title section with proper formatting
             if (script.metadata != null && !string.IsNullOrEmpty(script.metadata.title))
             {
                 sb.AppendLine($"Title: {script.metadata.title}");
                 sb.AppendLine();
             }
 
-            // Core stats in a more organized layout with clear separation
             sb.AppendLine($"Duration: {MetadataFormatter.FormatTime(duration)} | Actions: {script.actions.Count} | Avg Speed: {avgSpeed:F1} movements/sec");
 
-            // Additional metadata with better formatting
             if (script.metadata != null)
             {
-                // Only add a separator if we have additional metadata
-                bool hasAdditionalInfo = !string.IsNullOrEmpty(script.metadata.creator) || 
-                                         (script.metadata.tags != null && script.metadata.tags.Length > 0);
-        
-                if (hasAdditionalInfo)
+                // Metadata: Creator and Type
+                if (!string.IsNullOrEmpty(script.metadata.creator) || !string.IsNullOrEmpty(script.metadata.type))
                 {
-                    sb.AppendLine();
-            
+                    var creatorTypeInfo = new List<string>();
                     if (!string.IsNullOrEmpty(script.metadata.creator))
-                        sb.Append($"Creator: {script.metadata.creator}");
-                
-                    if (script.metadata.tags != null && script.metadata.tags.Length > 0)
-                        sb.AppendLine($"{(string.IsNullOrEmpty(script.metadata.creator) ? "" : " | ")}Tags: {string.Join(", ", script.metadata.tags)}");
+                        creatorTypeInfo.Add($"Creator: {script.metadata.creator}");
+                    if (!string.IsNullOrEmpty(script.metadata.type))
+                        creatorTypeInfo.Add($"Type: {script.metadata.type}");
+                    sb.AppendLine(string.Join(" | ", creatorTypeInfo));
+                }
+
+                // Metadata: Performers and License
+                if ((script.metadata.performers != null && script.metadata.performers.Length > 0) || 
+                    !string.IsNullOrEmpty(script.metadata.license))
+                {
+                    var performersLicenseInfo = new List<string>();
+                    if (script.metadata.performers != null && script.metadata.performers.Length > 0)
+                        performersLicenseInfo.Add($"Performers: {string.Join(", ", script.metadata.performers)}");
+                    if (!string.IsNullOrEmpty(script.metadata.license))
+                        performersLicenseInfo.Add($"License: {script.metadata.license}");
+                    
+                    sb.AppendLine(string.Join(" | ", performersLicenseInfo));
+                }
+
+                // Metadata: Tags
+                if (script.metadata.tags != null && script.metadata.tags.Length > 0)
+                {
+                    sb.AppendLine($"Tags: {string.Join(", ", script.metadata.tags)}");
+                }
+
+                // Metadata: Description
+                if (!string.IsNullOrEmpty(script.metadata.description))
+                    sb.AppendLine($"Description: {script.metadata.description}");
+
+                // Metadata: Notes
+                if (!string.IsNullOrEmpty(script.metadata.notes))
+                    sb.AppendLine($"Notes: {script.metadata.notes}");
+
+                // Metadata: URLs
+                if (!string.IsNullOrEmpty(script.metadata.script_url))
+                    sb.AppendLine($"Script URL: {script.metadata.script_url}");
+
+                if (!string.IsNullOrEmpty(script.metadata.video_url))
+                    sb.AppendLine($"Video URL: {script.metadata.video_url}");
+
+                // Metadata: Chapters
+                if (script.metadata.chapters != null && script.metadata.chapters.Length > 0)
+                {
+                    sb.AppendLine("Chapters:");
+                    foreach (var chapter in script.metadata.chapters)
+                    {
+                        sb.AppendLine($"- {chapter?.name} ({chapter?.startTime} - {chapter?.endTime})");
+                    }
                 }
             }
 

@@ -25,5 +25,6 @@ namespace FunscriptPreviewHandler.Models
         public string title { get; set; }
         public string type { get; set; }
         public string video_url { get; set; }
+        public FunscriptChapter[] chapters { get; set; }
     }
 }
