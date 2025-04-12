@@ -116,6 +116,9 @@ jobs:
           Type: files; Name: "{app}\Newtonsoft.Json.dll";
           Type: files; Name: "{app}\SharpShell.dll";
           Type: dirifempty; Name: "{app}"
+          
+          [Registry]
+          Root: HKCU; Subkey: "Software\FunscriptPreviewHandler"; Flags: uninsdeletekey
           "@
           
           Set-Content -Path "installer.iss" -Value $innoScript

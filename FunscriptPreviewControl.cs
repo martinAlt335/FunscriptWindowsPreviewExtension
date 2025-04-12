@@ -19,87 +19,263 @@ namespace FunscriptPreviewHandler
         private readonly Label _metadataLabel;
         private readonly Panel _visualizationPanel;
         private readonly Panel _metadataPanel;
+        private Funscript _currentScript = null;
+        
+        // Theme toggle properties
+        private readonly Button _themeToggleButton;
+        private readonly FlowLayoutPanel _buttonPanel;
+        
+        // Metadata panel resizing properties
+        private bool _isResizing = false;
+        private readonly Panel _resizeHandle;
+        private int _startHeight;
+        private Point _startMousePos;
 
         public FunscriptPreviewControl()
         {
-            _mainLayout = new TableLayoutPanel { 
+            InitializeSettings();
+            
+            _mainLayout = CreateMainLayout();
+            _visualizationPanel = CreateVisualizationPanel(out _visualizationBox);
+            _metadataPanel = CreateMetadataPanel(out _metadataLabel, out _resizeHandle);
+            _buttonPanel = CreateButtonPanel(out _themeToggleButton);
+            
+            ArrangeLayout();
+        }
+        
+        private void InitializeSettings()
+        {
+            SettingsManager.Initialize();
+        }
+        
+        private TableLayoutPanel CreateMainLayout()
+        {
+            var themeColors = SettingsManager.GetCurrentThemeColors();
+            
+            return new TableLayoutPanel { 
                 Dock = DockStyle.Fill,
                 Padding = new Padding(15),
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
-                BackColor = Color.FromArgb(22, 22, 22)
+                BackColor = themeColors.MainBackground
             };
+        }
         
-            // Create panel to host visualization with border
-            _visualizationPanel = new Panel {
+        private Panel CreateVisualizationPanel(out PictureBox visualizationBox)
+        {
+            var themeColors = SettingsManager.GetCurrentThemeColors();
+            
+            var panel = new Panel {
                 Dock = DockStyle.Fill,
                 Padding = new Padding(1),
-                Margin = new Padding(0, 0, 0, 10),
-                BackColor = Color.FromArgb(50, 50, 50),
+                BackColor = themeColors.PanelBorder,
                 MaximumSize = new Size(0, 150)
             };
-        
-            _visualizationBox = new PictureBox { 
+            
+            visualizationBox = new PictureBox { 
                 Dock = DockStyle.Fill,
                 SizeMode = PictureBoxSizeMode.StretchImage,
-                BackColor = Color.FromArgb(28, 28, 28)
+                BackColor = themeColors.PanelBackground
             };
+            
+            panel.Controls.Add(visualizationBox);
+            return panel;
+        }
         
-            _visualizationPanel.Controls.Add(_visualizationBox);
-        
-            // Create panel to host metadata with border
-            _metadataPanel = new Panel {
+        private Panel CreateMetadataPanel(out Label metadataLabel, out Panel resizeHandle)
+        {
+            var themeColors = SettingsManager.GetCurrentThemeColors();
+            
+            var panel = new Panel {
                 Dock = DockStyle.Fill,
                 Padding = new Padding(1),
-                BackColor = Color.FromArgb(50, 50, 50),
-                MaximumSize = new Size(0, 300)
+                BackColor = themeColors.PanelBorder,
+                MinimumSize = new Size(0, 250),
+                Height = SettingsManager.MetadataPanelHeight
             };
-        
-            _metadataLabel = new Label { 
+            
+            metadataLabel = new Label { 
                 Dock = DockStyle.Fill,
                 AutoSize = false,
-                BackColor = Color.FromArgb(28, 28, 28),
-                ForeColor = Color.FromArgb(220, 220, 220),
+                BackColor = themeColors.PanelBackground,
+                ForeColor = themeColors.TextColor,
                 Font = new Font("Segoe UI", 10.5f),
                 Padding = new Padding(15)
             };
-            _metadataPanel.Controls.Add(_metadataLabel);
+            
+            resizeHandle = CreateResizeHandle();
+            
+            panel.Controls.Add(resizeHandle);
+            panel.Controls.Add(metadataLabel);
+            
+            return panel;
+        }
         
-            // Use fixed heights instead of percentages
-            _mainLayout.RowCount = 2;
-            _mainLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Auto for visualization
-            _mainLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Auto for metadata
+        private Panel CreateResizeHandle()
+        {
+            var themeColors = SettingsManager.GetCurrentThemeColors();
+            
+            var handle = new Panel {
+                Dock = DockStyle.Bottom,
+                Height = 8,
+                Cursor = Cursors.SizeNS,
+                BackColor = themeColors.PanelBorder
+            };
+            
+            handle.MouseDown += ResizeHandle_MouseDown;
+            handle.MouseUp += ResizeHandle_MouseUp;
+            handle.MouseMove += ResizeHandle_MouseMove;
+            
+            return handle;
+        }
+        
+        private FlowLayoutPanel CreateButtonPanel(out Button themeToggleButton)
+        {
+            var themeColors = SettingsManager.GetCurrentThemeColors();
+            
+            themeToggleButton = new Button {
+                Text = SettingsManager.CurrentTheme == ThemeType.Light ? "Dark Mode" : "Light Mode",
+                ForeColor = themeColors.TextColor,
+                BackColor = themeColors.PanelBackground,
+                FlatStyle = FlatStyle.Flat,
+                Width = 120,
+                Height = 30,
+                Margin = new Padding(0, 0, 0, 0)
+            };
+            
+            themeToggleButton.FlatAppearance.BorderColor = themeColors.PanelBorder;
+            themeToggleButton.FlatAppearance.BorderSize = 1;
+            themeToggleButton.Click += ThemeToggleButton_Click;
+            
+            var panel = new FlowLayoutPanel {
+                Dock = DockStyle.Bottom,
+                Height = 40,
+                FlowDirection = FlowDirection.LeftToRight,
+                BackColor = themeColors.MainBackground,
+                Padding = new Padding(15, 0, 15, 10)
+            };
+            
+            panel.Controls.Add(themeToggleButton);
+            
+            return panel;
+        }
+        
+        private void ArrangeLayout()
+        {
+            _mainLayout.RowCount = 3;
+            _mainLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            _mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, SettingsManager.MetadataPanelHeight));
+            _mainLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _mainLayout.Controls.Add(_visualizationPanel, 0, 0);
             _mainLayout.Controls.Add(_metadataPanel, 0, 1);
+            _mainLayout.Controls.Add(_buttonPanel, 0, 2);
         
             Controls.Add(_mainLayout);
-            BackColor = Color.FromArgb(22, 22, 22);
+            BackColor = SettingsManager.GetCurrentThemeColors().MainBackground;
+        }
+        
+        private void ResizeHandle_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                _isResizing = true;
+                _startMousePos = PointToScreen(e.Location);
+                _startHeight = _metadataPanel.Height;
+                _resizeHandle.Capture = true;
+            }
+        }
+
+        private void ResizeHandle_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && _isResizing)
+            {
+                _isResizing = false;
+                _resizeHandle.Capture = false;
+        
+                Point currentPos = PointToScreen(e.Location);
+                int diff = currentPos.Y - _startMousePos.Y;
+                int newHeight = _startHeight + diff;
+        
+                newHeight = Math.Max(newHeight, _metadataPanel.MinimumSize.Height);
+                newHeight = Math.Min(newHeight, 800);
+        
+                _metadataPanel.Height = newHeight;
+                _mainLayout.RowStyles[1] = new RowStyle(SizeType.Absolute, newHeight);
+                _mainLayout.PerformLayout();
+        
+                SettingsManager.SetMetadataPanelHeight(newHeight);
+            }
+        }
+
+        private void ResizeHandle_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_isResizing)
+            {
+                Cursor.Current = Cursors.SizeNS;
+            }
+        }
+
+        private void ThemeToggleButton_Click(object sender, EventArgs e)
+        {
+            SettingsManager.ToggleTheme();
+            ApplyTheme();
+            
+            if (_currentScript != null) // Re-render funscript if loaded
+            {
+                _visualizationBox.Image = RenderPreview(_currentScript, 
+                    Math.Max(400, _visualizationBox.Width), 
+                    Math.Max(300, _visualizationBox.Height));
+            }
+        }
+        
+        private void ApplyTheme()
+        {
+            var themeColors = SettingsManager.GetCurrentThemeColors();
+            
+            _mainLayout.BackColor = themeColors.MainBackground;
+            BackColor = themeColors.MainBackground;
+            
+            _visualizationPanel.BackColor = themeColors.PanelBorder;
+            _visualizationBox.BackColor = themeColors.PanelBackground;
+            
+            _metadataPanel.BackColor = themeColors.PanelBorder;
+            _metadataLabel.BackColor = themeColors.PanelBackground;
+            _metadataLabel.ForeColor = themeColors.TextColor;
+            
+            _resizeHandle.BackColor = themeColors.PanelBorder;
+            
+            _themeToggleButton.Text = SettingsManager.CurrentTheme == ThemeType.Light ? "Dark Mode" : "Light Mode";
+            _themeToggleButton.ForeColor = themeColors.TextColor;
+            _themeToggleButton.BackColor = themeColors.PanelBackground;
+            _themeToggleButton.FlatAppearance.BorderColor = themeColors.PanelBorder;
+            
+            _buttonPanel.BackColor = themeColors.MainBackground;
         }
 
         public void HandlePreview(string filePath)
         {
             try 
             {
-                // Read the funscript JSON from file
+                // Read funscript JSON from file
                 string json = File.ReadAllText(filePath);
-                var funscript = JsonConvert.DeserializeObject<Funscript>(json);
+                _currentScript = JsonConvert.DeserializeObject<Funscript>(json);
                 
-                if (funscript == null || funscript.actions == null || funscript.actions.Count == 0)
+                if (_currentScript == null || _currentScript.actions == null || _currentScript.actions.Count == 0)
                 {
                     _metadataLabel.Text = "Invalid or empty funscript file";
                     return;
                 }
                 
                 // Calculate derived metadata if needed
-                int duration = funscript.actions[funscript.actions.Count - 1].at;
-                double avgSpeed = MetadataFormatter.CalculateAverageSpeed(funscript.actions);
+                int duration = _currentScript.actions[_currentScript.actions.Count - 1].at;
+                double avgSpeed = MetadataFormatter.CalculateAverageSpeed(_currentScript.actions);
                 
                 // Render visualization
-                _visualizationBox.Image = RenderPreview(funscript, 
+                _visualizationBox.Image = RenderPreview(_currentScript, 
                     Math.Max(400, _visualizationBox.Width), 
                     Math.Max(300, _visualizationBox.Height));
                 
                 // Display metadata
-                _metadataLabel.Text = FormatMetadata(funscript, duration, avgSpeed);
+                _metadataLabel.Text = FormatMetadata(_currentScript, duration, avgSpeed);
             }
             catch (Exception ex)
             {
@@ -116,8 +292,10 @@ namespace FunscriptPreviewHandler
 
             using (Graphics g = Graphics.FromImage(bitmap))
             {
+                var themeColors = SettingsManager.GetCurrentThemeColors();
+                
                 // Fill entire background
-                using (var bgBrush = new SolidBrush(Color.FromArgb(28, 28, 28)))
+                using (var bgBrush = new SolidBrush(themeColors.PanelBackground))
                 {
                     g.FillRectangle(bgBrush, 0, 0, width, maxHeatmapHeight);
                 }
@@ -202,16 +380,15 @@ namespace FunscriptPreviewHandler
             return sb.ToString();
         }
         
-        // Override methods from PreviewHandlerControl
         protected override void SetVisualsBackgroundColor(Color color)
         {
-            BackColor = color;
-            _mainLayout.BackColor = color;
+            ApplyTheme();
         }
         
         protected override void SetVisualsTextColor(Color color)
         {
-            _metadataLabel.ForeColor = color;
+            var themeColors = SettingsManager.GetCurrentThemeColors();
+            _metadataLabel.ForeColor = themeColors.TextColor;
         }
         
         protected override void SetVisualsFont(Font font)
